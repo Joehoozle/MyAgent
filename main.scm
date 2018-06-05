@@ -23,7 +23,7 @@
 		(newline)
 
 		; explore for the first 20 turns by allowing random moves
-        (if (< explore-count 10) (set! explore-count (+ explore-count 10)))
+        (if (< explore-count 10) (set! explore-count (+ explore-count 1)))
 	
 		; once exploring has stopped, begin surviving
         (if (and (equal? explore-count 10) (equal? state "EXPLORE")) (set! state "SURVIVING"))
@@ -31,7 +31,7 @@
 
 		(analyze-events previous-events percepts)
 		(analyze-environment percepts)
-        (make-choice percepts)
+        (make-choice percepts current-energy)
     )
 )
 
@@ -135,6 +135,7 @@
 				(newline)
 				(newline)
 				(change-vegetation-position my-vegetations (cadar previous-events))
+				(set! my-vegetations (drop-vegetations my-vegetations))
 			)
 		)	
 		(#t (process-movements (cdr previous-events)))
@@ -159,10 +160,19 @@
     )
 )
 
+; drop vegetations that have gotten too far away
+(define (drop-vegetations my-veggies) 
+	(cond
+		((null? my-veggies) '())
+		((> (+ (caaar my-veggies) (cadaar my-veggies)) 15) (drop-vegetations (cdr my-veggies)))
+		(#t (cons (car my-veggies) (drop-vegetations (cdr my-veggies))))
+	)
+)
+
 ;---------------------------------------------------------------------------------------------------------
 ; MAKE CHOICE
 
-(define (make-choice environment)
+(define (make-choice environment current-energy)
     (display "make-choice")
 	(newline)
 	(newline)
@@ -179,7 +189,7 @@
         ((equal? state "FLIGHT-SPOTTED-1")
             (begin
                 (set! state "EXPLORE")
-                (move-towards-veggies 3)
+                (move-forward 3)
             )
         ) 
 
@@ -203,37 +213,52 @@
 		((equal? state "FLIGHT-ATTACKED-2")
             (begin
                 (set! state "FLIGHT-SPOTTED-1")
-                (move-towards-veggies 3)
+                (move-forward 3)
             )
         )
 
-		; if you cannot move through space
-		((equal? state "BACKTRACK") 
-			(cond
-				; turn around and a vegetation is there means that you are trapped inside of 4 vegetations 
-				;FIX THIS
-				;((not (equal? (caddr (get-square-info environment 2)) 0)) (eat environment))  
-				;((equal? (caddr (get-square-info environment 2)) 0) (turn-towards-veggies "LEFT"))
-				
-				; backtrack 2 spaces
-				(#t 	
-					(begin
-						(set! state "EXPLORE")
-						(move-towards-veggies 3)
-					)
+		; These states are for moving around
+	
+		((equal? state "LEFT-AROUND-1") 
+			(begin
+				(set! state "LEFT-AROUND-2")
+				(cond
+					((equal? (get-square-info environment 3) 'empty) (move-forward 1))
+					((equal? (get-square-info environment 7) 'empty) (move-forward 2))
+					((equal? (get-square-info environment 13) 'empty) (move-forward 3))
+					(#t (move-forward 1))
 				)
+			)	
+		)
+
+		((equal? state "LEFT-AROUND-2")
+			(begin
+				(set! state "SURVIVING")
+				(turn-towards-veggies "RIGHT")
 			)
 		)
+
+		((equal? state "RIGHT-AROUND-1") 
+			(begin
+				(set! state "RIGHT-AROUND-2")
+				(cond
+                	((equal? (get-square-info environment 3) 'empty) (move-forward 1))
+                	((equal? (get-square-info environment 7) 'empty) (move-forward 2))
+               		((equal? (get-square-info environment 13) 'empty) (move-forward 3))
+					(#t (move-forward 1))
+				)
+			)	
+		)
 		
-
-		; THIS SHOULD BE FIXED 
-		;((equal? (in-front environment) 'vegetation) "EAT-PASSIVE")  
-        
-
-
+		((equal? state "RIGHT-AROUND-2")
+			(begin
+				(set! state "SURVIVING")
+				(turn-towards-veggies "LEFT")
+			)
+		)
 
 		((equal? state "EXPLORE") (smart-random-move environment))
-		((equal? state "SURVIVING") (educated-move environment))
+		((equal? state "SURVIVING") (educated-move environment current-energy))
     )
 )
 ;-----------------------------------------------------------------------------------------------------------
@@ -246,6 +271,15 @@
 	(newline)
 )
 
+
+; make sure something is not a barrier or empty so you can car it
+(define (not-barrier-empty x) 
+	(cond
+		((equal? x 'empty) #f)
+		((equal? x 'barrier) #f)
+		(#t #t)
+	)
+)
 
  ; returns what is front of the agent
 (define (in-front environment) 
@@ -263,6 +297,17 @@
             ((equal? square-number 1) (caar environment))
             ((null? (cdar environment)) (get-square-info (cdr environment) (- square-number 1)))
             (#t (get-square-info (cons (cdar environment) (cdr environment)) (- square-number 1)))   
+        )
+)
+
+; get square info only for veggies, predators, and agents
+(define (get-square-info-select environment square-number)
+        (cond
+            ((and (equal? square-number 1) (equal? (caar environment) 'barrier)) #f)
+			((and (equal? square-number 1) (equal? (caar environment) 'empty)) #f)
+			((equal? square-number 1) (caar environment))
+            ((null? (cdar environment)) (get-square-info-select (cdr environment) (- square-number 1)))
+            (#t (get-square-info-select (cons (cdar environment) (cdr environment)) (- square-number 1)))
         )
 )
 

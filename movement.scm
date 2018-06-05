@@ -16,16 +16,20 @@
 
 ; move to the next vegetation on your list, but make sure 
 ; that there is not something blocking your way
-(define (educated-move environment)
+(define (educated-move environment current-energy)
 	(display "educated-move")
 	(newline)
 	(newline)
 	(cond
+	
+		; (simulated annealing) --> basically at random start exploring again to see if you can optimize the problem better
+	
+		((and (get-square-info-select environment 2) (and (equal? (car (get-square-info-select environment 2)) 'vegetation) (not (equal? (caddr (get-square-info-select environment 2)) 0)))) (eat-choice environment current-energy)) 
 
 		((null? my-vegetations) (random-move))	
 
 		; eat when vegetaton is in front of you
-		((and (equal? (caaar my-vegetations) 0) (equal? (cadaar my-vegetations) 1)) (eat-choice environment))
+		((and (equal? (caaar my-vegetations) 0) (equal? (cadaar my-vegetations) 1)) (eat-choice environment current-energy))
 	
 		; decide how to best move towards vegetation
 	
@@ -53,17 +57,22 @@
         ((> (caaar my-vegetations) 0) (turn-towards-veggies "RIGHT"))	
 
 		; if one of you axies is already 0, then you need to do manuerving around
-		; TODO: IMPLEMENT A BETTER BACKTRACKING SYSTEM
-		((equal? (get-square-info environment 1) 'empty) (turn-towards-veggies "LEFT"))
-		((equal? (get-square-info environment 3) 'empty) (turn-towards-veggies "RIGHT"))
+		((equal? (get-square-info environment 1) 'empty) 
+			(begin
+				(set! state "LEFT-AROUND-1")
+				(turn-towards-veggies "LEFT")
+			)
+		)
 		
-		; stuck with obstacles on right, left, and in front 
-		(#t  "STAY"
-			;(begin
-			;	(set! state "BACKTRACK")
-			;	(turn-towards-veggies "AROUND")
-			;)
-		) 		 		
+		((equal? (get-square-info environment 3) 'empty) 
+			(begin
+				(set! state "RIGHT-AROUND-1")
+				(turn-towards-veggies "RIGHT")
+			)
+		)
+		
+		; just in case there is a weird case I missed 
+		(#t  "STAY") 		 		
 	)
 )
 
