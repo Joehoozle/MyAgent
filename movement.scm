@@ -17,55 +17,58 @@
 ; move to the next vegetation on your list, but make sure 
 ; that there is not something blocking your way
 (define (educated-move environment)
+	(display "educated-move")
+	(newline)
+	(newline)
 	(cond
+
+		((null? my-vegetations) (random-move))	
+	
 		; eat when vegetaton is in front of you
-		((and (equal? (caaar my-vegetations) 0) (equal? (cadaar my-vegetations) 1)) (eat environment))
-		
+		((and (equal? (caaar my-vegetations) 0) (equal? (cadaar my-vegetations) 1)) (eat-choice environment))
+	
 		; decide how to best move towards vegetation
-		;
-		;
+	
 		; Adjacent square to the veggies
 		((and (equal? (caaar my-vegetations) -1) (equal? (cadaar my-vegetations) 0)) (turn-towards-veggies "LEFT"))
 		((and (equal? (caaar my-vegetations) 1) (equal? (cadaar my-vegetations) 0)) (turn-towards-veggies "RIGHT"))
 		((and (equal? (caaar my-vegetations) 0) (equal? (cadaar my-vegetations) -1)) (turn-towards-veggies "AROUND"))		
 
-		; need to turn right
-		((and (< 0 (caaar my-vegetations)) (equal? (cadaar my-vegetations) 0)) (turn-towards-veggies "RIGHT"))
-        ; need to turn left 
-		((and (> 0 (caaar my-vegetations)) (equal? (cadaar my-vegetations) 0)) (turn-towards-veggies "LEFT"))
-		; need to turn around
-		((and (equal? (caaar my-vegetations) 0) (< (cadaar my-vegetations) 0)) (turn-towards-veggies "AROUND"))
-
+		; finished one axis, flip to the other
+		((and (equal? (caaar my-vegetations) 0) (< (cadaar my-vegetations) -1)) (turn-towards-veggies "AROUND"))
+		((and (< (caaar my-vegetations) 0) (equal? (cadaar my-vegetations) 0)) (turn-towards-veggies "LEFT"))
+		((and (> (caaar my-vegetations) 0) (equal? (cadaar my-vegetations) 0)) (turn-towards-veggies "RIGHT"))
+	
+		; move forward when you can
 		((and (and (equal? (get-square-info environment 2) 'empty) (equal? (get-square-info environment 6) 'empty)) (equal? (get-square-info environment 12) 'empty)) (move-towards-veggies 3))
 		((and (equal? (get-square-info environment 2) 'empty) (equal? (get-square-info environment 6) 'empty)) (move-towards-veggies 2))
 		((equal? (get-square-info environment 2) 'empty) (move-towards-veggies 1))
 		
 		; go around obstacles by going around the left side or right side depending
-		((equal? (get-square-info environment 1) 'empty) (turn-towards-veggies "LEFT"))
-		((equal? (get-square-info environment 3) 'empty) (turn-towards-veggies "RIGHT"))
+		;((equal? (get-square-info environment 1) 'empty) (turn-towards-veggies "LEFT"))
+		;((equal? (get-square-info environment 3) 'empty) (turn-towards-veggies "RIGHT"))
 		
 		; stuck with obstacles on right, left, and in front 
-		(#t 
-			(begin
-				(set! state "BACKTRACK")
-				(turn-towards-veggies "AROUND")
-			)
+		(#t  "STAY"
+			;(begin
+			;	(set! state "BACKTRACK")
+			;	(turn-towards-veggies "AROUND")
+			;)
 		) 		 		
 	)
 )
 
-(define (eat environment) "EAT-PASSIVE")
-
 ; move agent towards the targeted vegetation
 (define (move-towards-veggies amount)
-	(display "I have moved towards the veggies!")
+	(display "move-towards-veggies")
 	(newline)
 	(newline)
 	(cond
 		((null? my-vegetations) (random-move))
-		((and (equal? (cadaar my-vegetations) 1) (> amount 1)) (move-forward 1))  
-		((and (equal? (cadaar my-vegetations) 2) (> amount 2)) (move-forward 2))
-  		((and (equal? (cadaar my-vegetations) 3) (> amount 3)) (move-forward 3)) 
+		((and (equal? (cadaar my-vegetations) 1) (> amount 1)) (move-forward 0))  
+		((and (equal? (cadaar my-vegetations) 2) (> amount 2)) (move-forward 1))
+  		((and (equal? (cadaar my-vegetations) 3) (> amount 3)) (move-forward 2))
+		((and (equal? (cadaar my-vegetations) 4) (> amount 4)) (move-foward 3)) 
 		(#t (move-forward amount))
 	)     
 )
@@ -73,6 +76,7 @@
 ; moving forward function
 (define (move-forward amount)
 	(cond
+		((equal? amount 0) "STAY")
 		((equal? amount 1) "MOVE-PASSIVE-1")
 		((equal? amount 2) "MOVE-PASSIVE-2")
 		((equal? amount 3) "MOVE-PASSIVE-3")
@@ -82,7 +86,7 @@
 
 ; turn in the direction you need to in order to reach 
 (define (turn-towards-veggies direction)
-	(display "I have turned towards the veggies!")
+	(display "turn-towards-veggies")
 	(newline)
 	(display direction)
 	(newline)
@@ -91,8 +95,8 @@
 	(newline)
 	(begin
 		(cond
-			((equal? direction "LEFT") (rotate-right my-vegetations))
-			((equal? direction "RIGHT") (rotate-left my-vegetations))
+			((equal? direction "LEFT") (rotate-left my-vegetations))
+			((equal? direction "RIGHT") (rotate-right my-vegetations))
 			((equal? direction "AROUND") (rotate-around my-vegetations))
 		)
 		(cond
@@ -162,9 +166,6 @@
 ;  #TESTED#
 (define (random-move)
     (let ((rand (random 9)))
-		(display rand)
-		(newline)
-		(newline)
         (cond
             ((equal? rand 0) (turn-towards-veggies "RIGHT"))
             ((equal? rand 1) (turn-towards-veggies "LEFT"))

@@ -1,6 +1,7 @@
 (load "movement.scm")
 (load "vegetation.scm")
 (load "predator.scm")
+(load "eat.scm")
 
 ; state that the AI is in
 (define state "EXPLORE")
@@ -14,12 +15,20 @@
 
 (define (choose-action current-energy previous-events percepts)
     (begin 
+		(display "beginning of turn logic")
+		(newline)
 		(display my-vegetations)
 		(newline)
-		(display current-minimum-bloom) 
+		(display state)
 		(newline)
-        (if (< explore-count 20) (set! explore-count (+ explore-count 1)))
-        (if (equal? explore-count 20) (set! state "SURVIVING"))
+
+		; explore for the first 20 turns by allowing random moves
+        (if (< explore-count 1) (set! explore-count (+ explore-count 1)))
+	
+		; once exploring has stopped, begin surviving
+        (if (and (equal? explore-count 1) (equal? state "EXPLORE")) (set! state "SURVIVING"))
+		
+
 		(analyze-events previous-events percepts)
 		(analyze-environment percepts)
         (make-choice percepts)
@@ -32,13 +41,16 @@
 ; analyze the environment square by square
 (define (analyze-environment-helper environment current-square)
     (begin
+		(display "analyze-environment")
+		(newline)
+		(newline)
         (let ((content (get-square-info environment current-square)))
 			(cond	
 				((equal? content 'empty) '())
 				((equal? content 'barrier) '())
            		;((equal? content 'barrier) (analyze-barrier current-square))
          		;((equal? (car content) 'agent) (analyze-agent (car content)))
-           		((equal? (car content) 'predator) (analyze-predator content current-square))
+           		;((equal? (car content) 'predator) (analyze-predator content current-square))
            		((equal? (car content) 'vegetation) (analyze-vegetation content current-square))
             )
         )
@@ -56,9 +68,13 @@
 ; ANALYZE EVENTS
 
 (define (analyze-events previous-events environment) 
+	(display "analyze-events")
+	(newline)
+	(newline)
 	(begin
 		(process-movements previous-events)
-		(process-attack previous-events environment)
+		(process-ate previous-events)
+		;(process-attack previous-events environment)
 	)
 )
 
@@ -68,7 +84,9 @@
         ((null? previous-events) #f)
         ((equal? (caar previous-events) 'attacked-by)
             (begin
-                (display (car previous-events))
+                (display "process-attack")
+				(newline)
+				(display (car previous-events))
                 (newline)
                 (newline)
                 (attacked environment (car previous-events))
@@ -78,12 +96,41 @@
 	)
 )
 
+; once you have eaten a vegetation, go to the next one on your list
+(define (process-ate previous-events) 
+	(cond
+		((null? previous-events) #f)
+		((equal? (caar previous-events) 'ate)
+			(begin
+				(display "process-ate")
+				(newline)
+				(newline)
+				(set! my-vegetations (ate (cdr my-vegetations) (list (car my-vegetations))))
+			)
+		)
+		(#t (process-ate (cdr previous-events)))
+	)
+) 
+
+; append the front of the list onto the back
+(define (ate front back) 
+	(begin
+		(display "ate")
+		(newline)
+		(newline)
+		(append front back)
+	)
+)
+
+
 ; if you moved, change movement accordingly
 (define (process-movements previous-events)
 	(cond
 		((null? previous-events) #f)
 		((equal? (caar previous-events) 'moved) 
 			(begin
+				(display "process-movements")
+				(newline)
 				(display (car previous-events))
 				(newline)
 				(newline)
@@ -96,6 +143,9 @@
 
 ; go through everything in my vegetation list and subtract the appropriate amount
 (define (change-vegetation-position my-veggies amount)
+	(display "change-vegetation-position")
+	(newline)
+	(newline)
 	(cond
         ((null? my-veggies) '())
         (#t (set! my-vegetations (cons (list (list (caaar my-veggies) (- (cadaar my-veggies) amount)) (cadar my-veggies)) (change-vegetation-position-helper (cdr my-veggies) amount))))
@@ -113,7 +163,10 @@
 ; MAKE CHOICE
 
 (define (make-choice environment)
-    (cond
+    (display "make-choice")
+	(newline)
+	(newline)
+	(cond
        	; begin running away sequence from predator
 		((equal? state "FLIGHT-SPOTTED-0") 
             (begin
@@ -158,8 +211,9 @@
 		((equal? state "BACKTRACK") 
 			(cond
 				; turn around and a vegetation is there means that you are trapped inside of 4 vegetations 
-				((not (equal? (caddr (get-square-info environment 2)) 0)) (eat environment))  
-				((equal? (caddr (get-square-info environment 2)) 0) (turn-towards-veggies "LEFT"))
+				;FIX THIS
+				;((not (equal? (caddr (get-square-info environment 2)) 0)) (eat environment))  
+				;((equal? (caddr (get-square-info environment 2)) 0) (turn-towards-veggies "LEFT"))
 				
 				; backtrack 2 spaces
 				(#t 	
@@ -170,9 +224,15 @@
 				)
 			)
 		)
+		
 
-		((equal? (in-front environment) 'vegetation) "EAT-PASSIVE")  
-        ((equal? state "EXPLORE") (smart-random-move environment))
+		; THIS SHOULD BE FIXED 
+		;((equal? (in-front environment) 'vegetation) "EAT-PASSIVE")  
+        
+
+
+
+		((equal? state "EXPLORE") (smart-random-move environment))
 		((equal? state "SURVIVING") (educated-move environment))
     )
 )
@@ -237,11 +297,11 @@
 ; #TESTED#
 (define (y-distance current-square)
     (cond 
-        ((and ( < current-square 4) (> current-square 0)) 0)   
-        ((and ( < current-square 9) (> current-square 3)) 1)
-        ((and ( < current-square 16) (> current-square 8)) 2) 
-        ((and ( < current-square 25) (> current-square 15)) 3)
-        ((and ( < current-square 36) (> current-square 24)) 4)        
+        ((and ( < current-square 4) (> current-square 0)) 1)   
+        ((and ( < current-square 9) (> current-square 3)) 2)
+        ((and ( < current-square 16) (> current-square 8)) 3) 
+        ((and ( < current-square 25) (> current-square 15)) 4)
+        ((and ( < current-square 36) (> current-square 24)) 5)        
     )
 )
 
