@@ -23,7 +23,7 @@
 	(cond
 
 		((null? my-vegetations) (random-move))	
-	
+
 		; eat when vegetaton is in front of you
 		((and (equal? (caaar my-vegetations) 0) (equal? (cadaar my-vegetations) 1)) (eat-choice environment))
 	
@@ -38,15 +38,24 @@
 		((and (equal? (caaar my-vegetations) 0) (< (cadaar my-vegetations) -1)) (turn-towards-veggies "AROUND"))
 		((and (< (caaar my-vegetations) 0) (equal? (cadaar my-vegetations) 0)) (turn-towards-veggies "LEFT"))
 		((and (> (caaar my-vegetations) 0) (equal? (cadaar my-vegetations) 0)) (turn-towards-veggies "RIGHT"))
-	
+
+		
+		; a standard move should never be directed in the negative y direction
+		((< (cadaar my-vegetations) 0) (turn-towards-veggies "AROUND"))
+		
 		; move forward when you can
 		((and (and (equal? (get-square-info environment 2) 'empty) (equal? (get-square-info environment 6) 'empty)) (equal? (get-square-info environment 12) 'empty)) (move-towards-veggies 3))
 		((and (equal? (get-square-info environment 2) 'empty) (equal? (get-square-info environment 6) 'empty)) (move-towards-veggies 2))
 		((equal? (get-square-info environment 2) 'empty) (move-towards-veggies 1))
 		
-		; go around obstacles by going around the left side or right side depending
-		;((equal? (get-square-info environment 1) 'empty) (turn-towards-veggies "LEFT"))
-		;((equal? (get-square-info environment 3) 'empty) (turn-towards-veggies "RIGHT"))
+		;go around obstacles that are causing a roadblock by switching the axis you are moving 
+        ((< (caaar my-vegetations) 0) (turn-towards-veggies "LEFT"))
+        ((> (caaar my-vegetations) 0) (turn-towards-veggies "RIGHT"))	
+
+		; if one of you axies is already 0, then you need to do manuerving around
+		; TODO: IMPLEMENT A BETTER BACKTRACKING SYSTEM
+		((equal? (get-square-info environment 1) 'empty) (turn-towards-veggies "LEFT"))
+		((equal? (get-square-info environment 3) 'empty) (turn-towards-veggies "RIGHT"))
 		
 		; stuck with obstacles on right, left, and in front 
 		(#t  "STAY"
@@ -65,10 +74,17 @@
 	(newline)
 	(cond
 		((null? my-vegetations) (random-move))
-		((and (equal? (cadaar my-vegetations) 1) (> amount 1)) (move-forward 0))  
-		((and (equal? (cadaar my-vegetations) 2) (> amount 2)) (move-forward 1))
-  		((and (equal? (cadaar my-vegetations) 3) (> amount 3)) (move-forward 2))
-		((and (equal? (cadaar my-vegetations) 4) (> amount 4)) (move-foward 3)) 
+		
+		; options if x is already equal to zero 
+		((and (and (equal? (cadaar my-vegetations) 1) (> amount 1)) (equal? (caaar my-vegetations) 0)) (move-forward 0))  
+		((and (and (equal? (cadaar my-vegetations) 2) (> amount 2)) (equal? (caaar my-vegetations) 0)) (move-forward 1))
+  		((and (and (equal? (cadaar my-vegetations) 3) (> amount 3)) (equal? (caaar my-vegetations) 0)) (move-forward 2))
+		((and (and (equal? (cadaar my-vegetations) 4) (> amount 4)) (equal? (caaar my-vegetations) 0)) (move-forward 3))
+		
+		; if x is not equal to zero
+		((and (equal? (cadaar my-vegetations) 1) (> amount 1)) (move-forward 1))
+        ((and (equal? (cadaar my-vegetations) 2) (> amount 2)) (move-forward 2))
+        ((and (equal? (cadaar my-vegetations) 3) (> amount 3)) (move-forward 3)) 
 		(#t (move-forward amount))
 	)     
 )

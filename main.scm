@@ -23,10 +23,10 @@
 		(newline)
 
 		; explore for the first 20 turns by allowing random moves
-        (if (< explore-count 1) (set! explore-count (+ explore-count 1)))
+        (if (< explore-count 10) (set! explore-count (+ explore-count 10)))
 	
 		; once exploring has stopped, begin surviving
-        (if (and (equal? explore-count 1) (equal? state "EXPLORE")) (set! state "SURVIVING"))
+        (if (and (equal? explore-count 10) (equal? state "EXPLORE")) (set! state "SURVIVING"))
 		
 
 		(analyze-events previous-events percepts)
@@ -238,6 +238,13 @@
 )
 ;-----------------------------------------------------------------------------------------------------------
 ; General Functions
+
+
+(define (print-it x)
+	(display x)
+	(newline)
+	(newline)
+)
 
 
  ; returns what is front of the agent
