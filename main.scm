@@ -74,7 +74,7 @@
 	(begin
 		(process-movements previous-events)
 		(process-ate previous-events)
-		;(process-attack previous-events environment)
+		(process-attack previous-events environment)
 	)
 )
 
@@ -89,7 +89,7 @@
 				(display (car previous-events))
                 (newline)
                 (newline)
-                (attacked environment (car previous-events))
+                (attacked environment (car previous-events)) 
             )
         )
         (#t (process-attack (cdr previous-events) environment))
@@ -135,7 +135,7 @@
 				(newline)
 				(newline)
 				(change-vegetation-position my-vegetations (cadar previous-events))
-				(set! my-vegetations (drop-vegetations my-vegetations))
+				(set! my-vegetations (drop-vegetations my-vegetations 15))
 			)
 		)	
 		(#t (process-movements (cdr previous-events)))
@@ -161,11 +161,11 @@
 )
 
 ; drop vegetations that have gotten too far away
-(define (drop-vegetations my-veggies) 
+(define (drop-vegetations my-veggies distance) 
 	(cond
 		((null? my-veggies) '())
-		((> (+ (caaar my-veggies) (cadaar my-veggies)) 15) (drop-vegetations (cdr my-veggies)))
-		(#t (cons (car my-veggies) (drop-vegetations (cdr my-veggies))))
+		((> (+ (caaar my-veggies) (cadaar my-veggies)) distance) (drop-vegetations (cdr my-veggies) distance))
+		(#t (cons (car my-veggies) (drop-vegetations (cdr my-veggies) distance)))
 	)
 )
 
@@ -189,31 +189,50 @@
         ((equal? state "FLIGHT-SPOTTED-1")
             (begin
                 (set! state "EXPLORE")
-                (move-forward 3)
+				(cond
+					((and (and (equal? (get-square-info environment 2) 'empty) (equal? (get-square-info environment 6) 'empty)) (equal? (get-square-info environment 12) 'empty)) (move-forward 3))
+                    ((and (equal? (get-square-info environment 2) 'empty) (equal? (get-square-info environment 6) 'empty)) (move-forward 2))
+                    ((equal? (get-square-info environment 2) 'empty) (move-forward 1))
+					(#t
+                    	(begin
+							(set! state "FLIGHT-SPOTTED-1")
+                        	(turn-towards-veggies "LEFT")
+                        )
+                    )
+                )
             )
         ) 
 
-		; sandwhiched between two predators
-		((equal? state "FLIGHT-ATTACKED-0") 
+		; turn to the left to avoid obstacle in front
+		((equal? state "FLIGHT-ATTACKED-TURN") 
             (begin
-                (set! state "FLIGHT-SPOTTED-1")
+                (set! state "FLIGHT-ATTACKED-MOVE")
                 (turn-towards-veggies "LEFT")
             )
         )
+
+		((equal? state "FLIGHT-ATTACKED-EAT")
+			(begin
+             	(set! state "FLIGHT-ATTACKED-TURN")
+            	(eat-choice environment current-energy)
+			)
+		)
 	
-		; predator is in front of you
-		((equal? state "FLIGHT-ATTACKED-1")
+		; path is somewhat straight
+		((equal? state "FLIGHT-ATTACKED-MOVE")
             (begin
-                (set! state "FLIGHT-SPOTTED-1")
-                (turn-towards-veggies "AROUND")
-            )
-        )
-	
-		; predator is to left, right, or behind you
-		((equal? state "FLIGHT-ATTACKED-2")
-            (begin
-                (set! state "FLIGHT-SPOTTED-1")
-                (move-forward 3)
+                (set! state "EXPLORE")
+				(cond 
+                	((and (and (equal? (get-square-info environment 2) 'empty) (equal? (get-square-info environment 6) 'empty)) (equal? (get-square-info environment 12) 'empty)) (move-forward 3))
+        			((and (equal? (get-square-info environment 2) 'empty) (equal? (get-square-info environment 6) 'empty)) (move-forward 2))
+        			((equal? (get-square-info environment 2) 'empty) (move-forward 1))
+					(#t 
+						(begin
+							(set! state "FLIGHT-ATTACKED-MOVE")
+							(turn-towards-veggies "LEFT")
+						)
+					)
+				)
             )
         )
 

@@ -2,7 +2,7 @@
 ;(define current-closest-predator 0)
 
 ;----------------------------------------------------------------------------------------
-;ANALYSIS
+;ANALYSIS FROM PERCEPT
 
 ; analyzing a predator in view
 (define (analyze-predator predator current-square)
@@ -28,21 +28,18 @@
 (define (check-scared current-square)
 
     ; since predators can only move one space, the manhatten distance is how many turns it takes for them to get to you
-    (let ((distance (manhatten-distance current-square)))
-		
+    (let ((distance (manhatten-distance current-square)))	
 		(begin
         	; if they are 2 turns from being adjacent to you, you have to run
-			(if (<= distance 3) (set! state "FLIGHT-SPOTTED-0"))
+			(if (<= distance 2) (set! state "FLIGHT-SPOTTED-0"))
 			; otherwise, you do not need to run
-			(if (> distance 3) '())
+			(if (> distance 2) '())
 		)
     )
 )
 
 ;--------------------------------------------------------------------------------------------
-; REACTION
-
-
+; REACTION FROM ATTACK
 
 ; THINK OF EVERY WAY YOU COULD BE APPROACHED BY MULTUPLE PREDATORS OR STUCK
 
@@ -54,14 +51,14 @@
 	(display (get-square-info environment 2))
 	(newline)
 	(cond
-		; you are sandwhiched between two predators
-		((and (equal? (in-front environment) 'predator) (not (equal? (cadr event) (cadr (get-square-info environment 2))))) (set! state "FLIGHT-ATTACKED-0"))
+		; if there is a plant blooming in front of the agent that will net points if eaten and taking another hit, eat it
+		((and (and (not-barrier-empty (get-square-info environment 2)) (equal? (car (get-square-info environment 2)) 'vegetation)) (> (caddr (get-square-info environment 2)) (abs (caddr event)))) (set! state "FLIGHT-ATTACKED-EAT"))
+	
+		; there is an empty path in front of you	
+		((equal? (get-square-info environment 2) 'empty) (set! state "FLIGHT-ATTACKED-MOVE"))		
 
-		; predator is in front of you
-		((and (equal? (in-front environment) 'predator) (equal? (cadr event) (cadr (get-square-info environment 2)))) (set! state "FLIGHT-ATTACKED-1"))
-
-		; predator is to left, right, or behind agent
-		(#t (set! state "FLIGHT-ATTACKED-2"))
+		; there is not an empty path in front of you
+		(#t (set! state "FLIGHT-ATTACKED-TURN"))
 	)
 ) 
 

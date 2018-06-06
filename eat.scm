@@ -13,7 +13,7 @@
 					(and (not-barrier-empty agent1) (and (equal? (car agent1) 'agent) (equal? (cadddr agent1) 'right))) 
 					(and (not-barrier-empty agent2) (and (equal? (car agent2) 'agent) (equal? (cadddr agent2) 'left)))) 
 				(and (not-barrier-empty agent3) (and (equal? (car agent3) 'agent) (equal? (cadddr agent3) 'towards)))) 
-			(eat-with-agents environmennt current-energy))
+			(eat-with-agents environment current-energy))
 
 			; extra check for agents within my line of sight that are a move away
             ((or 
@@ -76,10 +76,10 @@
 					)
 				)
 			))
-			("EAT-PASSIVELY"))
-		)
+				("EAT-PASSIVELY"))
 		
 		; either there is no one contesting, or I am stronger than all of them
-		(#t "EAT-AGGRESIVE")
+			(#t "EAT-AGGRESIVE")
+		)
 	)
 )
