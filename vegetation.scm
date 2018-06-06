@@ -79,7 +79,6 @@
 
 
 ; if a veggie has changed bloom amount (to more, as you want to track max) from previous turn, don't add it as a new veggie. Just update it.
-; #TESTED#
 (define (check-for-same-veggie my-veggies vegetation current-square)
 	(cond
 		((null? my-veggies) #f)
@@ -90,7 +89,6 @@
 
 
 ; replace old value of vegetation in my-veggies with newly observeved number
-; #TESTED#
 (define (update-bloom-value my-veggies vegetation current-square)
 	(cond 
 		((null? my-veggies) '())
@@ -100,7 +98,6 @@
 )
 
 ; finds the minimum bloom of a list of vegetations 
-; #TESTED#
 (define (find-min-bloom-helper passed-vegetations min)
     (cond 
         ((null? passed-vegetations) min)
@@ -110,12 +107,10 @@
 )
 
 ; wrapper function for finding the minimum blooming vegetation
-; #TESTED$
 (define (find-min-bloom passed-vegetations) (find-min-bloom-helper passed-vegetations 10000000))
 
 
 ; function for removing a bloom value. The flag is used to not delete the same value twice.
-; #TESTED#
 (define (remove-bloom-helper passed-vegetations bloom-value flag)
     (cond 
         ((null? passed-vegetations) '())    
@@ -126,5 +121,4 @@
 )
 
 ; wrapper function for removing a bloom value 
-; #TESTED#
 (define (remove-bloom passed-vegetations bloom-value) (remove-bloom-helper passed-vegetations bloom-value 0))

@@ -21,14 +21,14 @@
 	(newline)
 	(newline)
 	(cond
-	
-		; (simulated annealing) --> basically at random start exploring again to see if you can optimize the problem better
-	
+		
+		; if there is vegetation in front of you by accident, you should eat it
 		((and (get-square-info-select environment 2) (and (equal? (car (get-square-info-select environment 2)) 'vegetation) (not (equal? (caddr (get-square-info-select environment 2)) 0)))) (eat-choice environment current-energy)) 
 
+		; if no vegetations are being kept track of, random move to explore
 		((null? my-vegetations) (random-move))	
 
-		; eat when vegetaton is in front of you
+		; eat when vegetaton is in front of you from moving towards it
 		((and (equal? (caaar my-vegetations) 0) (equal? (cadaar my-vegetations) 1)) (eat-choice environment current-energy))
 	
 		; decide how to best move towards vegetation
@@ -109,7 +109,7 @@
 )
 
 
-; turn in the direction you need to in order to reach 
+; turn in the direction you need to in order to reach desired vegetation
 (define (turn-towards-veggies direction)
 	(display "turn-towards-veggies")
 	(newline)
@@ -176,7 +176,6 @@
 )
 
 ; picks a random move of turning when exploring and something is in front of the agent
-; #TESTED#
 (define (random-turn)
     (let ((rand (random 3)))
         (cond
@@ -188,7 +187,6 @@
 )
 
 ; picks a random move of turning or moving passively while exploring
-;  #TESTED#
 (define (random-move)
     (let ((rand (random 9)))
         (cond

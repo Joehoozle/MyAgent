@@ -7,6 +7,10 @@
 	
 	 (let ((agent1 (get-square-info environment 1)) (agent2 (get-square-info environment 6)) (agent3 (get-square-info environment 3)) (agent4 (get-square-info environment 12)) (agent5 (get-square-info environment 20)) (agent6 (get-square-info environment 30)))
 		(cond 
+
+			; veggie does not have bloom
+			((equal? (caddr (get-square-info environment 2)) 0) "STAY")
+			
 			; check for competing agents directly next to veggie
 			((or 
 				(or 
@@ -22,6 +26,10 @@
 					(and (not-barrier-empty agent5) (and (equal? (car agent5) 'agent) (equal? (cadddr agent5) 'towards)))) 
 				(and (not-barrier-empty agent6) (and (equal? (car agent6) 'agent) (equal? (cadddr agent6) 'towards)))) 
 			(eat))
+
+			; besides being at position (0,1), the only other time you eat is when you accidently run into vegetation
+			; Because you have no knowledge of its maximum bloom, you should just eat it so long as the bloom is not zero
+			((and (not (and (equal? (caaar my-vegetations) 0) (equal? (cadaar my-vegetations) 1))) (not (equal? (caddr (get-square-info environment 2)) 0))) (eat)) 
 
 			; if you have no threats, and the current bloom is not the max you have seen it, you should wait
 			((not (equal? (caddr (get-square-info environment 2)) (cadar my-vegetations))) "STAY")  
@@ -79,7 +87,13 @@
 				("EAT-PASSIVELY"))
 		
 		; either there is no one contesting, or I am stronger than all of them
-			(#t "EAT-AGGRESIVE")
+			(#t 
+				(begin
+					(display "I am strong")
+					(newline)
+					"EAT-AGGRESIVE"
+				)
+			)	
 		)
 	)
 )

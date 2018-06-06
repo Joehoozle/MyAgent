@@ -9,6 +9,9 @@
 ; counts the number of turns the agent is exploring. Once it gets to a certain maximum, it will stop exploring and begin normal survival methods.
 (define explore-count 0)
 
+; if I spend too much time searching for one veggie, I should switch to the next
+(define veggie-count 0)
+
 
 
 (define (initialize-agent) "Hey!")
@@ -22,14 +25,41 @@
 		(display state)
 		(newline)
 
-		; explore for the first 20 turns by allowing random moves
+		; explore for the first 10 turns by allowing random moves
         (if (< explore-count 10) (set! explore-count (+ explore-count 1)))
 	
+		; only try to reach a veggie for 20 turns as it may be blocked
+		(if (< veggie-count 20) (set! veggie-count (+ veggie-count 1)))
+
 		; once exploring has stopped, begin surviving
         (if (and (equal? explore-count 10) (equal? state "EXPLORE")) (set! state "SURVIVING"))
 		
-
 		(analyze-events previous-events percepts)
+		
+		 ;if veggie count is too much, move onto next vegetation
+		(if (and (equal? veggie-count 20) (not (null? my-vegetations)))
+			(begin
+				(set! my-vegetations (ate (cdr my-vegetations) (list (car my-vegetations))))
+				(set! veggie-count 0)
+			)
+		)
+
+		(if (equal? state "SURVIVING")
+			(let ((rand (random 200)))
+        		(cond
+            		((equal? rand 21) 
+						(begin
+							(display "Now switching to explore")
+							(newline)
+							(set! explore-count (- explore-count 5))
+							(set! state "EXPLORE")
+        			
+						)
+					)
+				)
+    		)
+		)
+
 		(analyze-environment percepts)
         (make-choice percepts current-energy)
     )
@@ -48,14 +78,14 @@
 			(cond	
 				((equal? content 'empty) '())
 				((equal? content 'barrier) '())
-           		;((equal? content 'barrier) (analyze-barrier current-square))
-         		;((equal? (car content) 'agent) (analyze-agent (car content)))
            		;((equal? (car content) 'predator) (analyze-predator content current-square))
            		((equal? (car content) 'vegetation) (analyze-vegetation content current-square))
             )
         )
     	(cond
+			; done observing every square
 			((equal? current-square 35) '())
+			; still have more to go
 			(#t (analyze-environment-helper environment (+ current-square 1)))
 		)
 	)
@@ -100,11 +130,12 @@
 (define (process-ate previous-events) 
 	(cond
 		((null? previous-events) #f)
-		((equal? (caar previous-events) 'ate)
+		((and (equal? (caar previous-events) 'ate) (and (equal? (caaar my-vegetations) 0) (equal? (cadaar my-vegetations) 1)))
 			(begin
 				(display "process-ate")
 				(newline)
 				(newline)
+				(set! veggie-count 0)
 				(set! my-vegetations (ate (cdr my-vegetations) (list (car my-vegetations))))
 			)
 		)
@@ -112,7 +143,7 @@
 	)
 ) 
 
-; append the front of the list onto the back
+; append the front of the vegetation list onto the back
 (define (ate front back) 
 	(begin
 		(display "ate")
@@ -123,7 +154,7 @@
 )
 
 
-; if you moved, change movement accordingly
+; if you moved, process the coordinates of the vegetations list 
 (define (process-movements previous-events)
 	(cond
 		((null? previous-events) #f)
@@ -177,7 +208,8 @@
 	(newline)
 	(newline)
 	(cond
-       	; begin running away sequence from predator
+
+       	; begin running away from predator by turning around
 		((equal? state "FLIGHT-SPOTTED-0") 
             (begin
                 (set! state "FLIGHT-SPOTTED-1")
@@ -211,6 +243,7 @@
             )
         )
 
+		; if the vegetation in front is more energy than the last attack, it is worth it to eat it
 		((equal? state "FLIGHT-ATTACKED-EAT")
 			(begin
              	(set! state "FLIGHT-ATTACKED-TURN")
@@ -218,7 +251,7 @@
 			)
 		)
 	
-		; path is somewhat straight
+		; move forward as predator is on left, right, or behind
 		((equal? state "FLIGHT-ATTACKED-MOVE")
             (begin
                 (set! state "EXPLORE")
@@ -236,8 +269,7 @@
             )
         )
 
-		; These states are for moving around
-	
+		; after turning left, move forward
 		((equal? state "LEFT-AROUND-1") 
 			(begin
 				(set! state "LEFT-AROUND-2")
@@ -250,6 +282,7 @@
 			)	
 		)
 
+		; turn right and proceed
 		((equal? state "LEFT-AROUND-2")
 			(begin
 				(set! state "SURVIVING")
@@ -257,6 +290,7 @@
 			)
 		)
 
+		; after turning right, move forward
 		((equal? state "RIGHT-AROUND-1") 
 			(begin
 				(set! state "RIGHT-AROUND-2")
@@ -269,6 +303,7 @@
 			)	
 		)
 		
+		; turn left to procede
 		((equal? state "RIGHT-AROUND-2")
 			(begin
 				(set! state "SURVIVING")
@@ -276,20 +311,14 @@
 			)
 		)
 
+		; random movement to see environment 
 		((equal? state "EXPLORE") (smart-random-move environment))
+		; main movement towards vegetations
 		((equal? state "SURVIVING") (educated-move environment current-energy))
     )
 )
 ;-----------------------------------------------------------------------------------------------------------
 ; General Functions
-
-
-(define (print-it x)
-	(display x)
-	(newline)
-	(newline)
-)
-
 
 ; make sure something is not a barrier or empty so you can car it
 (define (not-barrier-empty x) 
@@ -300,7 +329,7 @@
 	)
 )
 
- ; returns what is front of the agent
+; returns what is front of the agent (just the string of what kind of object it is)
 (define (in-front environment) 
 	(cond
 		((equal? (cadar environment) 'barrier) 'barrier)
@@ -310,7 +339,6 @@
 )
 
 ; get info from a specific box in environment view 
-; #TESTED#
 (define (get-square-info environment square-number) 
         (cond
             ((equal? square-number 1) (caar environment))
@@ -331,7 +359,6 @@
 )
 
 ; lookup predator or vegatation id in id-list to see if it is there
-; #TESTED#
 (define (lookup-id id-list id-found)
     (cond
         ((null? id-list) #f)
@@ -341,7 +368,6 @@
 )
 
 ; lookup the manhatten distance 
-; #TESTED#
 (define (manhatten-distance current-square) 
 	(cond 
         ((and ( < current-square 4) (> current-square 0)) (+ 0 (abs (- 2 current-square))))  
@@ -353,7 +379,6 @@
 )
 
 ; get x-distance from to current-square
-; #TESTED#
 (define (x-distance current-square)
     (cond 
         ((and ( < current-square 4) (> current-square 0)) (- current-square 2))  
@@ -365,7 +390,6 @@
 )
 
 ; get y-distance to current-square
-; #TESTED#
 (define (y-distance current-square)
     (cond 
         ((and ( < current-square 4) (> current-square 0)) 1)   
@@ -378,7 +402,6 @@
 
 
 ; helper function to find the size of a list
-; #TESTED#
 (define (list-size-helper alist num)
   (cond
       ((null? alist) num)
@@ -387,5 +410,4 @@
 )
 
 ; wrapper function to find the size of a list
-; #TESTED#
 (define (list-size alist) (list-size-helper alist 0))
